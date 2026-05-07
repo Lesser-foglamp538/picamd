@@ -1,0 +1,130 @@
+name: Release
+
+# Triggered by pushing a tag like `v0.8.0-alpha` or `v1.0.0`. Builds
+# Release, ad-hoc-signs, zips, and uploads the .zip + a SHA-256
+# checksum to a GitHub Release. The checksum lets users verify
+# their download (and pairs with Sparkle's appcast for in-app
+# updates).
+#
+# When `secrets.NOTARIZE_API_KEY` etc. exist, the workflow can be
+# extended to also notarize via Apple's notary service. Until then
+# (free Developer account), the .zip is ad-hoc signed only —
+# users see a Gatekeeper warning on first open and right-click → Open
+# to bypass it. The README spells this out.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 0.8.0). Bumps project.yml in-place before build."
+        required: false
+        type: string
+
+permissions:
+  contents: write   # needed to create the GH Release
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-release:
+    name: Build, sign (ad-hoc), package
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.app/Contents/Developer
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # release.sh reads git tag history
+
+      - name: Determine version
+        id: ver
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            # Strip the leading `v` from the tag (`v0.8.0-alpha` → `0.8.0-alpha`).
+            VERSION="${GITHUB_REF_NAME#v}"
+          elif [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            # Fallback to whatever's in project.yml.
+            VERSION=$(awk -F'"' '/MARKETING_VERSION:/ {print $2; exit}' project.yml)
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building version $VERSION"
+
+      - name: Install build tools
+        run: brew install xcodegen
+
+      - name: Build & package
+        run: ./release.sh "${{ steps.ver.outputs.version }}"
+
+      - name: Compute checksum
+        id: shasum
+        shell: bash
+        run: |
+          ZIP="dist/PicaMD-${{ steps.ver.outputs.version }}.zip"
+          SHA=$(shasum -a 256 "$ZIP" | awk '{print $1}')
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "$SHA  $(basename "$ZIP")" > "$ZIP.sha256"
+
+      - name: Generate release notes
+        id: notes
+        shell: bash
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          ZIP="dist/PicaMD-$VERSION.zip"
+          # Pull the matching CHANGELOG section into release-notes.md if
+          # present; fall back to a generic blurb otherwise.
+          NOTES=release-notes.md
+          {
+            echo "# PicaMD $VERSION"
+            echo
+            echo "Native macOS Markdown editor with live preview, AI presets, and Claude Code MCP server."
+            echo
+            echo "## Install"
+            echo
+            echo '1. Download `PicaMD-'"$VERSION"'.zip`'
+            echo "2. Unzip and drag \`PicaMD.app\` into \`/Applications/\`"
+            echo "3. **First launch**: right-click \`PicaMD.app\` → **Open** → confirm in the dialog."
+            echo "   (This release is ad-hoc signed because the project doesn't yet have an Apple Developer ID. macOS will warn you on first launch only — subsequent launches are unimpeded.)"
+            echo
+            echo "Alternative one-liner: \`xattr -dr com.apple.quarantine /Applications/PicaMD.app\`"
+            echo
+            echo "## Verify download"
+            echo
+            echo '```'
+            echo "shasum -a 256 PicaMD-$VERSION.zip"
+            echo "# expected: ${{ steps.shasum.outputs.sha }}"
+            echo '```'
+            echo
+            echo "## Changelog"
+            echo
+            # Try to pull the matching section from CHANGELOG.md
+            if grep -q "## \[$VERSION\]" CHANGELOG.md 2>/dev/null; then
+              awk "/## \[$VERSION\]/,/## \[/" CHANGELOG.md | sed '$d'
+            else
+              echo "See [CHANGELOG.md](CHANGELOG.md) for the full set of changes."
+            fi
+          } > "$NOTES"
+          echo "Generated $NOTES"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: PicaMD ${{ steps.ver.outputs.version }}
+          body_path: release-notes.md
+          draft: false
+          prerelease: ${{ contains(steps.ver.outputs.version, '-alpha') || contains(steps.ver.outputs.version, '-beta') || contains(steps.ver.outputs.version, '-rc') }}
+          files: |
+            dist/PicaMD-${{ steps.ver.outputs.version }}.zip
+            dist/PicaMD-${{ steps.ver.outputs.version }}.zip.sha256

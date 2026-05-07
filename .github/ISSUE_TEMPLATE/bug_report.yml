@@ -1,0 +1,67 @@
+name: Bug report
+description: Something isn't working the way it should
+labels: [bug, alpha-feedback]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear, short description of the bug. Screenshots welcome.
+      placeholder: When I press ⌃⌘1, the app …
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproducible steps
+      description: |
+        Numbered steps that someone else can follow on a fresh PicaMD
+        install. If the bug needs a specific Markdown file or AI
+        provider config to trigger, paste it.
+      placeholder: |
+        1. Open a new document
+        2. Type `## Heading` then ⌘L
+        3. The cursor jumps to …
+    validations:
+      required: true
+
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "14.5 / 15.0 / …"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: arch
+    attributes:
+      label: Mac
+      options:
+        - Apple silicon (M1/M2/M3/M4)
+        - Intel
+    validations:
+      required: true
+
+  - type: input
+    id: picamd-version
+    attributes:
+      label: PicaMD version
+      description: From the `About PicaMD` menu item.
+      placeholder: "0.8.0-alpha"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: ai-affected
+    attributes:
+      label: Does this involve the AI hook or MCP server?
+      description: Helps us route to the right place.
+      options:
+        - "No — pure editor / file / theme bug"
+        - "AI hook (⌃Space / ⌃⌘1-9)"
+        - "MCP server (picamd-mcp called from Claude Code)"
+        - "Not sure"
+    validations:
+      required: true

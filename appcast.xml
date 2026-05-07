@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PicaMD Sparkle appcast. New releases are published by the
+  GitHub Actions Release workflow (`.github/workflows/release.yml`)
+  on every `v*` tag push; after a successful build, the maintainer
+  signs the release zip with `sign_update` and adds a new <item>
+  to the top of <channel>. Sparkle's auto-update loop in the app
+  fetches this XML, picks the highest sparkle:version newer than
+  the running build, and offers it to the user.
+
+  The sparkle:edSignature is an EdDSA signature over the zip;
+  Sparkle verifies it against SUPublicEDKey from Info.plist before
+  installing. Without that, even a successful HTTPS download is
+  rejected — so the appcast file itself doesn't need to be signed.
+-->
+<rss version="2.0"
+     xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"
+     xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>PicaMD Updates</title>
+    <link>https://raw.githubusercontent.com/michiwickman/picamd/main/appcast.xml</link>
+    <description>Updates for PicaMD — native macOS Markdown editor for the Claude era.</description>
+    <language>en</language>
+
+    <item>
+      <title>PicaMD 0.8.0-alpha</title>
+      <link>https://github.com/michiwickman/picamd/releases/tag/v0.8.0-alpha</link>
+      <sparkle:version>0.8.0-alpha</sparkle:version>
+      <sparkle:shortVersionString>0.8.0-alpha</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 07 May 2026 08:25:35 +0000</pubDate>
+      <description><![CDATA[
+        <h2>Public-Alpha</h2>
+        <p>
+          First public release. Native macOS Markdown editor with
+          single-view live preview, multi-provider AI presets
+          (⌃⌘1–⌃⌘9), built-in Claude Code MCP server
+          (<code>picamd-mcp</code>), Quick-Look extension,
+          Spotlight integration, and Pandoc-backed export.
+        </p>
+        <p>
+          184 unit tests, 9.8 MB bundle, only Apple system
+          libraries linked (plus Sparkle for auto-update).
+        </p>
+        <p>
+          Ad-hoc signed (no paid Apple Developer ID yet) — first
+          launch needs a right-click → Open. Goes away with v1.0
+          notarization.
+        </p>
+      ]]></description>
+      <enclosure
+        url="https://github.com/michiwickman/picamd/releases/download/v0.8.0-alpha/PicaMD-0.8.0-alpha.zip"
+        sparkle:edSignature="eNoz3iZ4lZcAC3x9en10x3IauK8RMegLQbeKB4qHG8jZMv9AqdU63QtQnOs8NIlouN/Z4AFLHumVmZzncS4mDA=="
+        length="3710084"
+        type="application/octet-stream" />
+    </item>
+  </channel>
+</rss>

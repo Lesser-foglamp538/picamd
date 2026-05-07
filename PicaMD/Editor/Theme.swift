@@ -1,0 +1,372 @@
+import AppKit
+
+// MARK: - Palette
+
+/// Colour tokens for one editor surface. Hex values are 1:1 from the
+/// design package's `themes.js`, so the four palettes match the
+/// Claude-Design prototype exactly.
+struct Palette: Equatable, Codable {
+    var bg: NSColor              // canvas background
+    var bgTint: NSColor          // chrome / tinted card surface (Tahoe variant)
+    var fg: NSColor
+    var fgMuted: NSColor
+    var rule: NSColor            // hairlines, separators
+    var ruleStrong: NSColor      // blockquote bar, stronger separators
+    var chrome: NSColor          // titlebar / status-bar fill
+    var codeBg: NSColor          // fenced code block background
+    var codeInlineBg: NSColor    // inline `code`
+    var codeFg: NSColor
+    var synKw: NSColor           // syntax keyword colour
+    var accent: NSColor          // default accent — overridden by AccentChoice
+    var highlight: NSColor       // ==highlight== background
+    var math: NSColor
+
+    // MARK: Built-in palettes (1:1 mit themes.js)
+
+    static let white = Palette(
+        bg:           NSColor(hex: "#ffffff"),
+        bgTint:       NSColor(hex: "#f5f5f7"),
+        fg:           NSColor(hex: "#1d1d1f"),
+        fgMuted:      NSColor(white: 60.0/255, alpha: 0.55),
+        rule:         NSColor(white: 60.0/255, alpha: 0.12),
+        ruleStrong:   NSColor(white: 60.0/255, alpha: 0.28),
+        chrome:       NSColor(red: 246/255, green: 246/255, blue: 247/255, alpha: 0.78),
+        codeBg:       NSColor(hex: "#f7f7f8"),
+        codeInlineBg: NSColor(hex: "#f3f3f5"),
+        codeFg:       NSColor(hex: "#2a2a2e"),
+        synKw:        NSColor(hex: "#a431a0"),
+        accent:       NSColor(hex: "#0a84ff"),
+        highlight:    NSColor(red: 1.0, green: 0.95, blue: 0.30, alpha: 0.50),
+        math:         NSColor(red: 0.40, green: 0.20, blue: 0.65, alpha: 1.0)
+    )
+
+    static let offwhite = Palette(
+        bg:           NSColor(hex: "#fbf9f4"),
+        bgTint:       NSColor(hex: "#f4f1ea"),
+        fg:           NSColor(hex: "#272620"),
+        fgMuted:      NSColor(red: 60/255, green: 55/255, blue: 40/255, alpha: 0.50),
+        rule:         NSColor(red: 60/255, green: 55/255, blue: 40/255, alpha: 0.14),
+        ruleStrong:   NSColor(red: 60/255, green: 55/255, blue: 40/255, alpha: 0.28),
+        chrome:       NSColor(red: 248/255, green: 244/255, blue: 236/255, alpha: 0.85),
+        codeBg:       NSColor(hex: "#f3efe6"),
+        codeInlineBg: NSColor(hex: "#efebe0"),
+        codeFg:       NSColor(hex: "#2c2a22"),
+        synKw:        NSColor(hex: "#a85c1f"),
+        accent:       NSColor(hex: "#b66a2a"),
+        highlight:    NSColor(red: 0.95, green: 0.85, blue: 0.20, alpha: 0.45),
+        math:         NSColor(red: 0.45, green: 0.30, blue: 0.10, alpha: 1.0)
+    )
+
+    static let darkgrey = Palette(
+        bg:           NSColor(hex: "#1c1c1e"),
+        bgTint:       NSColor(hex: "#2a2a2c"),
+        fg:           NSColor(hex: "#ececec"),
+        fgMuted:      NSColor(red: 235/255, green: 235/255, blue: 245/255, alpha: 0.55),
+        rule:         NSColor(white: 1.0, alpha: 0.10),
+        ruleStrong:   NSColor(white: 1.0, alpha: 0.22),
+        chrome:       NSColor(red: 28/255, green: 28/255, blue: 30/255, alpha: 0.78),
+        codeBg:       NSColor(hex: "#252527"),
+        codeInlineBg: NSColor(hex: "#2c2c2e"),
+        codeFg:       NSColor(hex: "#e7e7ea"),
+        synKw:        NSColor(hex: "#ff7ab2"),
+        accent:       NSColor(hex: "#0a84ff"),
+        highlight:    NSColor(red: 0.65, green: 0.55, blue: 0.10, alpha: 0.40),
+        math:         NSColor(red: 0.80, green: 0.70, blue: 1.00, alpha: 1.0)
+    )
+
+    static let oled = Palette(
+        bg:           NSColor(hex: "#000000"),
+        bgTint:       NSColor(hex: "#0a0a0a"),
+        fg:           NSColor(hex: "#e9e9ea"),
+        fgMuted:      NSColor(red: 235/255, green: 235/255, blue: 245/255, alpha: 0.42),
+        rule:         NSColor(white: 1.0, alpha: 0.07),
+        ruleStrong:   NSColor(white: 1.0, alpha: 0.18),
+        chrome:       NSColor(white: 0.0, alpha: 0.78),
+        codeBg:       NSColor(hex: "#0c0c0c"),
+        codeInlineBg: NSColor(hex: "#101010"),
+        codeFg:       NSColor(hex: "#dededf"),
+        synKw:        NSColor(hex: "#ff7ab2"),
+        accent:       NSColor(hex: "#0a84ff"),
+        highlight:    NSColor(red: 0.55, green: 0.45, blue: 0.05, alpha: 0.40),
+        math:         NSColor(red: 0.80, green: 0.70, blue: 1.00, alpha: 1.0)
+    )
+
+    var isDark: Bool {
+        // Decide by checking the bg lightness — works for any custom palette
+        // a plugin might add later.
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        bg.usingColorSpace(.sRGB)?.getRed(&r, green: &g, blue: &b, alpha: &a)
+        let luma = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        return luma < 0.5
+    }
+}
+
+// MARK: - PaletteName
+
+enum PaletteName: String, CaseIterable, Identifiable, Codable {
+    case white, offwhite, darkgrey, oled
+
+    var id: String { rawValue }
+
+    var palette: Palette {
+        switch self {
+        case .white: return .white
+        case .offwhite: return .offwhite
+        case .darkgrey: return .darkgrey
+        case .oled: return .oled
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .white: return "Pure White"
+        case .offwhite: return "Off-White"
+        case .darkgrey: return "Dark Grey"
+        case .oled: return "OLED True Black"
+        }
+    }
+}
+
+// MARK: - HeadingScale
+
+enum HeadingScale: String, CaseIterable, Identifiable, Codable {
+    case tight, defaultScale = "default", airy
+
+    var id: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .tight: return "Tight"
+        case .defaultScale: return "Default"
+        case .airy: return "Airy"
+        }
+    }
+
+    /// Sizes for H1...H6, in order. Mirrors the prototype's
+    /// `.scale-airy / .scale-default / .scale-tight` rules.
+    var sizes: [CGFloat] {
+        switch self {
+        case .tight:        return [22, 18, 16, 15, 14, 14]
+        case .defaultScale: return [28, 21, 17, 15.5, 14, 14]
+        case .airy:         return [36, 24, 18, 16, 15, 15]
+        }
+    }
+}
+
+// MARK: - CodeBlockStyle
+
+enum CodeBlockStyle: String, CaseIterable, Identifiable, Codable {
+    case card, tinted, stripe, flat
+
+    var id: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .card:   return "Card with border"
+        case .tinted: return "Tinted, no border"
+        case .stripe: return "Left stripe only"
+        case .flat:   return "Flat / muted"
+        }
+    }
+}
+
+// MARK: - Body / Heading font family
+
+enum BodyFontFamily: String, CaseIterable, Identifiable, Codable {
+    case mono, sans
+
+    var id: String { rawValue }
+    var displayName: String { self == .mono ? "Mono" : "Sans" }
+
+    func font(size: CGFloat, bold: Bool = false) -> NSFont {
+        switch self {
+        case .mono: return .monospacedSystemFont(ofSize: size, weight: bold ? .semibold : .regular)
+        case .sans: return .systemFont(ofSize: size, weight: bold ? .semibold : .regular)
+        }
+    }
+}
+
+enum HeadingFontFamily: String, CaseIterable, Identifiable, Codable {
+    case sans, serif
+
+    var id: String { rawValue }
+    var displayName: String { self == .sans ? "Sans" : "Serif" }
+
+    func font(size: CGFloat, bold: Bool = true) -> NSFont {
+        let weight: NSFont.Weight = bold ? .bold : .regular
+        switch self {
+        case .sans:
+            return .systemFont(ofSize: size, weight: weight)
+        case .serif:
+            // Try New York (system serif) first; fall back to Georgia.
+            let descriptor = NSFontDescriptor(name: "New York", size: size)
+                .addingAttributes([.traits: [NSFontDescriptor.TraitKey.weight: weight]])
+            if let font = NSFont(descriptor: descriptor, size: size) {
+                return font
+            }
+            return NSFont(name: "Georgia-Bold", size: size)
+                ?? .systemFont(ofSize: size, weight: weight)
+        }
+    }
+}
+
+// MARK: - AccentChoice
+
+enum AccentChoice: String, CaseIterable, Identifiable, Codable {
+    case system, blue, orange, pink, green, purple, mono
+
+    var id: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .system: return "System (Blue)"
+        case .blue:   return "Blue"
+        case .orange: return "Warm Orange"
+        case .pink:   return "Pink"
+        case .green:  return "Green"
+        case .purple: return "Purple"
+        case .mono:   return "Monochrome"
+        }
+    }
+
+    /// Colour from the prototype's ACCENTS dictionary.
+    var color: NSColor {
+        switch self {
+        case .system, .blue: return NSColor(hex: "#0a84ff")
+        case .orange:        return NSColor(hex: "#ff8c42")
+        case .pink:          return NSColor(hex: "#ff375f")
+        case .green:         return NSColor(hex: "#30d158")
+        case .purple:        return NSColor(hex: "#bf5af2")
+        case .mono:          return NSColor(hex: "#7d7d82")
+        }
+    }
+}
+
+// MARK: - EditorTheme
+
+/// Aggregate of every tweakable. Equatable so view layers can diff and
+/// re-render only when something actually changed.
+struct EditorTheme: Equatable, Codable {
+    var preset: PresetVariant
+    var paletteName: PaletteName
+    var accent: AccentChoice
+    var bodyFont: BodyFontFamily
+    var headingFont: HeadingFontFamily
+    var headingScale: HeadingScale
+    var codeStyle: CodeBlockStyle
+    var headingRule: Bool
+    var showStatusBar: Bool
+    var fontBaseSize: CGFloat
+
+    var palette: Palette { paletteName.palette }
+
+    /// Effective accent colour: explicit accent if set, else palette's own
+    /// accent (used for "system" → palette default).
+    var effectiveAccent: NSColor {
+        switch accent {
+        case .system: return palette.accent
+        default:      return accent.color
+        }
+    }
+
+    static let `default` = EditorTheme(
+        preset: .stockPlus,
+        paletteName: .white,
+        accent: .system,
+        bodyFont: .mono,
+        headingFont: .sans,
+        headingScale: .defaultScale,
+        codeStyle: .card,
+        headingRule: false,
+        showStatusBar: true,
+        fontBaseSize: 14.5
+    )
+}
+
+// MARK: - NSColor hex helper
+
+extension NSColor {
+    /// Initialize from a `#RRGGBB` or `#RRGGBBAA` hex string in sRGB.
+    convenience init(hex: String) {
+        var s = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        if s.hasPrefix("#") { s.removeFirst() }
+        var value: UInt64 = 0
+        Scanner(string: s).scanHexInt64(&value)
+        let r, g, b, a: CGFloat
+        if s.count == 8 {
+            r = CGFloat((value >> 24) & 0xff) / 255
+            g = CGFloat((value >> 16) & 0xff) / 255
+            b = CGFloat((value >>  8) & 0xff) / 255
+            a = CGFloat( value        & 0xff) / 255
+        } else {
+            r = CGFloat((value >> 16) & 0xff) / 255
+            g = CGFloat((value >>  8) & 0xff) / 255
+            b = CGFloat( value        & 0xff) / 255
+            a = 1.0
+        }
+        self.init(srgbRed: r, green: g, blue: b, alpha: a)
+    }
+}
+
+// MARK: - Codable for NSColor (sRGB hex)
+
+extension Palette {
+    private enum CodingKeys: String, CodingKey {
+        case bg, bgTint, fg, fgMuted, rule, ruleStrong, chrome,
+             codeBg, codeInlineBg, codeFg, synKw, accent, highlight, math
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        func col(_ k: CodingKeys) throws -> NSColor {
+            NSColor(hex: try c.decode(String.self, forKey: k))
+        }
+        bg           = try col(.bg)
+        bgTint       = try col(.bgTint)
+        fg           = try col(.fg)
+        fgMuted      = try col(.fgMuted)
+        rule         = try col(.rule)
+        ruleStrong   = try col(.ruleStrong)
+        chrome       = try col(.chrome)
+        codeBg       = try col(.codeBg)
+        codeInlineBg = try col(.codeInlineBg)
+        codeFg       = try col(.codeFg)
+        synKw        = try col(.synKw)
+        accent       = try col(.accent)
+        highlight    = try col(.highlight)
+        math         = try col(.math)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        func put(_ k: CodingKeys, _ color: NSColor) throws {
+            try c.encode(color.toHex(), forKey: k)
+        }
+        try put(.bg, bg)
+        try put(.bgTint, bgTint)
+        try put(.fg, fg)
+        try put(.fgMuted, fgMuted)
+        try put(.rule, rule)
+        try put(.ruleStrong, ruleStrong)
+        try put(.chrome, chrome)
+        try put(.codeBg, codeBg)
+        try put(.codeInlineBg, codeInlineBg)
+        try put(.codeFg, codeFg)
+        try put(.synKw, synKw)
+        try put(.accent, accent)
+        try put(.highlight, highlight)
+        try put(.math, math)
+    }
+}
+
+extension NSColor {
+    func toHex() -> String {
+        let s = usingColorSpace(.sRGB) ?? self
+        let r = Int((s.redComponent   * 255).rounded())
+        let g = Int((s.greenComponent * 255).rounded())
+        let b = Int((s.blueComponent  * 255).rounded())
+        let a = Int((s.alphaComponent * 255).rounded())
+        if a == 255 {
+            return String(format: "#%02x%02x%02x", r, g, b)
+        } else {
+            return String(format: "#%02x%02x%02x%02x", r, g, b, a)
+        }
+    }
+}

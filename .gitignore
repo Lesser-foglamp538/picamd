@@ -1,0 +1,48 @@
+# Xcode-generated artifacts (xcodegen rebuilds these from project.yml)
+QuickMD.xcodeproj/
+PicaMD.xcodeproj/
+*.xcworkspace/
+
+# Build outputs
+build-release/
+build/
+DerivedData/
+*.app
+
+# User-specific Xcode state
+*.xcuserstate
+*.xcuserdatad/
+xcuserdata/
+
+# macOS detritus
+.DS_Store
+._.DS_Store
+
+# Editor caches
+.vscode/
+.idea/
+.swiftpm/
+
+# Compressed design archives — source files live in QuickMD Design/
+QuickMD Design.zip
+
+# Coverage temp files
+default.profraw
+
+# release.sh output — built artefacts go in GH Releases, not git
+dist/
+
+# Internal-only / dev-process documents (never committed)
+PHASES.md
+PRÄSENTATION.md
+ADVERSARIAL_REVIEW.md
+V4_ANALYSIS.md
+TYPORA_PARITY_ROADMAP.md
+TECH_DEBT.md
+TECH_DEBT_REMAINING.md
+QuickMD Design/
+QuickMD Design.zip
+
+# Local dev scratch
+.local/
+.notes/

@@ -1,0 +1,211 @@
+name: PicaMD
+options:
+  bundleIdPrefix: de.michaelwittmann
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+  schemePathPrefix: ""
+  generateEmptyDirectories: true
+schemes:
+  PicaMD:
+    build:
+      targets:
+        PicaMD: all
+        # MCP test bundle has no host app, so xcodegen doesn't pull
+        # it into the BuildAction transitively from the test list.
+        # Explicitly include it for the testing build phase.
+        PicaMDMCPTests: testing
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - PicaMDTests
+        - PicaMDMCPTests
+      gatherCoverageData: true
+    archive:
+      config: Release
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: NO
+    # Bundle version — single source of truth. release.sh and the
+    # GitHub Actions workflow rewrite this in-place to match the git
+    # tag they're building from. Local builds use whatever's checked
+    # in.
+    MARKETING_VERSION: "0.8.0"
+    CURRENT_PROJECT_VERSION: "1"
+    GENERATE_INFOPLIST_FILE: NO
+    INFOPLIST_FILE: PicaMD/Info.plist
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    COMBINE_HIDPI_IMAGES: YES
+    DEAD_CODE_STRIPPING: YES
+  configs:
+    Debug:
+      ONLY_ACTIVE_ARCH: YES
+    Release:
+      ARCHS: arm64
+      ONLY_ACTIVE_ARCH: NO
+      STRIP_INSTALLED_PRODUCT: YES
+      DEPLOYMENT_POSTPROCESSING: YES
+      SWIFT_OPTIMIZATION_LEVEL: "-O"
+      SWIFT_COMPILATION_MODE: wholemodule
+packages:
+  swift-markdown:
+    url: https://github.com/apple/swift-markdown
+    from: 0.6.0
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.6.0
+targets:
+  PicaMD:
+    type: application
+    platform: macOS
+    sources:
+      - path: PicaMD
+        excludes:
+          - "Info.plist"
+    resources:
+      - path: PicaMD/Resources
+    dependencies:
+      - package: swift-markdown
+        product: Markdown
+      - package: Sparkle
+        product: Sparkle
+      - target: PicaMDQuickLook
+      - target: PicaMDMCP
+        embed: false
+        link: false
+    postBuildScripts:
+      - name: Embed MCP sidecar
+        # Copy the freshly-built `picamd-mcp` binary into the app
+        # bundle's Resources folder so a single `cp -R PicaMD.app
+        # /Applications/` install carries the sidecar too. Claude Code
+        # references it via `/Applications/PicaMD.app/Contents/Resources/
+        # picamd-mcp` in the user's `.mcp.json`.
+        script: |
+          set -e
+          SIDECAR="${BUILT_PRODUCTS_DIR}/picamd-mcp"
+          DEST="${TARGET_BUILD_DIR}/${WRAPPER_NAME}/Contents/Resources/picamd-mcp"
+          if [ -f "$SIDECAR" ]; then
+              cp "$SIDECAR" "$DEST"
+              chmod +x "$DEST"
+          else
+              echo "warning: picamd-mcp binary not found at $SIDECAR — skipping embed"
+          fi
+        outputFiles:
+          - "$(TARGET_BUILD_DIR)/$(WRAPPER_NAME)/Contents/Resources/picamd-mcp"
+    settings:
+      base:
+        PRODUCT_NAME: PicaMD
+        PRODUCT_BUNDLE_IDENTIFIER: de.michaelwittmann.PicaMD
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/../Frameworks"
+
+  PicaMDQuickLook:
+    type: app-extension
+    platform: macOS
+    sources:
+      # The provider itself.
+      - path: PicaMDQuickLook
+        excludes:
+          - "Info.plist"
+          - "PicaMDQuickLook.entitlements"
+      # Re-compile the renderer + frontmatter parser + Theme types
+      # into the extension. These have no dependencies on the rest of
+      # the editor (highlighter, AppKit views), so the extension stays
+      # tiny while still producing identical-looking HTML to what the
+      # main app's Export menu emits.
+      - path: PicaMD/Editor/MarkdownToHTML.swift
+      - path: PicaMD/Editor/Frontmatter.swift
+      - path: PicaMD/Editor/FootnoteIndex.swift
+      - path: PicaMD/Editor/Theme.swift
+      - path: PicaMD/Editor/PresetVariant.swift
+    dependencies:
+      - package: swift-markdown
+        product: Markdown
+    settings:
+      base:
+        PRODUCT_NAME: PicaMDQuickLook
+        PRODUCT_BUNDLE_IDENTIFIER: de.michaelwittmann.PicaMD.QuickLook
+        INFOPLIST_FILE: PicaMDQuickLook/Info.plist
+        CODE_SIGN_ENTITLEMENTS: PicaMDQuickLook/PicaMDQuickLook.entitlements
+        # Quick-Look extensions REQUIRE the sandbox entitlement to be
+        # registered with `pkd`. Without it the extension is silently
+        # rejected at install time.
+        ENABLE_APP_SANDBOX: YES
+        SKIP_INSTALL: YES
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/../../../../Frameworks"
+
+  PicaMDMCP:
+    type: tool
+    platform: macOS
+    sources:
+      - path: PicaMDMCP
+    settings:
+      base:
+        PRODUCT_NAME: picamd-mcp
+        PRODUCT_BUNDLE_IDENTIFIER: de.michaelwittmann.PicaMD.mcp
+        # The MCP sidecar is a plain command-line tool — no AppKit,
+        # no entitlements, no sandbox. Lives inside the app bundle's
+        # `Contents/MacOS/` directory and is invoked by Claude Code
+        # via stdio.
+        SKIP_INSTALL: YES
+        SWIFT_STRICT_CONCURRENCY: complete
+
+  PicaMDTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: PicaMDTests
+    dependencies:
+      - target: PicaMD
+    settings:
+      base:
+        PRODUCT_NAME: PicaMDTests
+        PRODUCT_BUNDLE_IDENTIFIER: de.michaelwittmann.PicaMDTests
+        # Tests run with the same strict-concurrency setting as the
+        # app so they catch the same regressions.
+        SWIFT_STRICT_CONCURRENCY: complete
+        GENERATE_INFOPLIST_FILE: YES
+
+  PicaMDMCPTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      # The test bundle needs to host the MCP source files directly —
+      # Xcode test bundles can't `@testable import` a command-line
+      # tool target. We compile a copy of each file we want to cover
+      # into the test bundle. Keeps the sidecar binary itself unaware
+      # of XCTest.
+      - path: PicaMDMCPTests
+      - path: PicaMDMCP/ToolRegistry.swift
+      - path: PicaMDMCP/Tools.swift
+      - path: PicaMDMCP/DocumentRegistry.swift
+    dependencies:
+      # PicaMD as the dep makes xcodegen put this test bundle in the
+      # scheme's BuildAction (otherwise the scheme's TestAction lists
+      # it but the BuildAction doesn't, and `xcodebuild test`
+      # silently skips it). The dep is build-only, no link/embed —
+      # we don't actually use the main app's symbols.
+      - target: PicaMD
+        link: false
+        embed: false
+      - target: PicaMDMCP
+        link: false
+        embed: false
+    settings:
+      base:
+        PRODUCT_NAME: PicaMDMCPTests
+        PRODUCT_BUNDLE_IDENTIFIER: de.michaelwittmann.PicaMDMCPTests
+        SWIFT_STRICT_CONCURRENCY: complete
+        GENERATE_INFOPLIST_FILE: YES
